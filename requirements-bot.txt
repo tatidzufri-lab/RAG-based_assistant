@@ -1,0 +1,15 @@
+# Зависимости только для работы бота.
+#
+# Основной requirements.txt включает ragas, datasets, langchain и
+# sentence-transformers — они нужны лишь скрипту evaluate_compare.py, который
+# считает метрики качества. В контейнер их тянуть незачем: sentence-transformers
+# приводит за собой torch, и образ разрастается на несколько гигабайт.
+#
+# Эмбеддинги бот получает через OpenAI API, локальная модель ему не нужна.
+#
+# Версии закрепляются после первой проверенной сборки.
+openai
+chromadb
+python-telegram-bot
+python-dotenv
+requests

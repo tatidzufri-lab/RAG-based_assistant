@@ -1,0 +1,30 @@
+services:
+  bot:
+    build:
+      context: .
+      args:
+        APP_UID: "${APP_UID:-1000}"
+    image: rag-assistant
+    container_name: rag-assistant
+    env_file: .env
+    environment:
+      - TZ=Europe/Moscow
+    # Портов наружу нет: бот сам опрашивает Telegram.
+    volumes:
+      # Индексы лежат именно в этих подкаталогах, а не в корне проекта:
+      # run_bot.py перед созданием каждого конвейера переходит в его каталог
+      # (так разводятся две реализации с одинаковыми именами модулей), и путь
+      # по умолчанию "./chroma_db" считается уже оттуда.
+      #
+      # Монтировать их нужно, потому что построение индекса стоит обращений
+      # к OpenAI и GigaChat за эмбеддингами. Если каталог пуст, бот
+      # проиндексирует документы из data/ при первом запуске сам.
+      - ./assistant_api/chroma_db:/app/assistant_api/chroma_db
+      - ./assistant_giga/chroma_db:/app/assistant_giga/chroma_db
+      # Журнал обращений — на нём построена аналитика кейса. Файл обязан
+      # существовать до запуска: иначе docker создаст на его месте каталог
+      # и sqlite не откроется.
+      - ./bot_logs.db:/app/bot_logs.db
+      # Кеши ответов намеренно не монтируются — их потеря безболезненна.
+    restart: unless-stopped
+    mem_limit: 900m
