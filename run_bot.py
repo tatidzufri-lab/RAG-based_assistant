@@ -454,10 +454,14 @@ class UnifiedTelegramBot:
             return await self.cmd_language(update, context)
 
         # Вопрос на другом языке — отвечаем на нем
+        previous_lang = self._lang(update)
         detected = lang_from_text(user_message)
         if detected:
             self._set_lang(update, detected)
         lang = self._lang(update)
+        # Язык сменился по тексту вопроса — вместе с ответом присылаем кнопки на новом языке,
+        # иначе внизу остается клавиатура на прежнем
+        new_keyboard = self._keyboard(lang) if lang != previous_lang else None
 
         user = update.effective_user
         user_id = str(user.id)
@@ -489,12 +493,12 @@ class UnifiedTelegramBot:
 
             max_len = 4000 - len(header)
             if len(answer) <= max_len:
-                await update.message.reply_text(header + answer)
+                await update.message.reply_text(header + answer, reply_markup=new_keyboard)
             else:
                 parts = [answer[i:i + max_len] for i in range(0, len(answer), max_len)]
                 for i, part in enumerate(parts):
                     prefix = header if i == 0 else ""
-                    await update.message.reply_text(prefix + part)
+                    await update.message.reply_text(prefix + part, reply_markup=new_keyboard if i == 0 else None)
 
             if result['from_cache']:
                 await update.message.reply_text(t('from_cache', lang))
