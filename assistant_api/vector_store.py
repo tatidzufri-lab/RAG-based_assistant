@@ -35,6 +35,12 @@ class VectorStore:
         self.persist_directory = persist_directory
         
         # Инициализация ChromaDB клиента
+        # Абсолютный путь: run_bot.py создает конвейер, временно перейдя в его каталог,
+        # а потом возвращается в /app. С относительным "./chroma_db" Chroma при
+        # переподключении к базе искала /app/chroma_db и падала с "unable to open
+        # database file", а оба конвейера делили одну базу (путь-строка совпадала).
+        persist_directory = os.path.abspath(persist_directory)
+        self.persist_directory = persist_directory
         self.client = chromadb.PersistentClient(path=persist_directory)
         
         # Получение или создание коллекции

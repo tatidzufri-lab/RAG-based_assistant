@@ -9,7 +9,7 @@
 #
 # Версии закрепляются после первой проверенной сборки.
 openai
-chromadb
+chromadb==1.5.9
 python-telegram-bot
 python-dotenv
 requests
