@@ -14,6 +14,7 @@ COPY run_bot.py ./
 COPY assistant_api/ ./assistant_api/
 COPY assistant_giga/ ./assistant_giga/
 COPY data/ ./data/
+COPY data_en/ ./data_en/
 
 # UID должен совпадать с владельцем примонтированных chroma_db и базы логов
 # на хосте, иначе бот не сможет записать индекс. На сервере это 1000.

@@ -18,7 +18,8 @@ class RAGPipeline:
                  collection_name: str = "rag_collection",
                  cache_db_path: str = "rag_cache.db",
                  data_path: str = "data",
-                 model: str = "gpt-4o-mini"):
+                 model: str = "gpt-4o-mini",
+                 language: str = "ru"):
         """
         Инициализация RAG pipeline.
         
@@ -34,6 +35,8 @@ class RAGPipeline:
         
         self.model = model
         self.data_path = data_path
+        # ru — русская база и ответы; en — английская база data_en/ и ответы на английском
+        self.language = language
         self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         
         print("Инициализация векторного хранилища...")
@@ -77,6 +80,23 @@ class RAGPipeline:
         Returns:
             сформированный промпт
         """
+        if self.language == "en":
+            context = "\n".join(f"Document {i}:\n{doc['text']}\n" for i, doc in enumerate(context_docs, 1))
+            return f"""You are a helpful AI assistant. Answer the user's question based on the context provided.
+
+Context:
+{context}
+
+Question: {query}
+
+Instructions:
+- Answer only from the context provided
+- If the context has no information to answer, say so
+- Be accurate and concise
+- Answer in English, in simple, clear sentences
+
+Answer:"""
+
         # Формирование контекста из документов
         context_parts = []
         for i, doc in enumerate(context_docs, 1):
@@ -115,7 +135,11 @@ class RAGPipeline:
         response = self.openai_client.chat.completions.create(
             model=self.model,
             messages=[
-                {"role": "system", "content": "Ты - полезный AI ассистент, который отвечает на вопросы на основе предоставленного контекста."},
+                {"role": "system", "content": (
+                    "You are a helpful AI assistant that answers questions based on the provided context."
+                    if self.language == "en" else
+                    "Ты - полезный AI ассистент, который отвечает на вопросы на основе предоставленного контекста."
+                )},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.3,  # Низкая температура для более точных ответов
