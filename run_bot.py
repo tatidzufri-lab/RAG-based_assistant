@@ -236,7 +236,7 @@ def lang_from_text(text):
     return None
 
 
-def t(key, lang, **kw):
+def t(key, lang, /, **kw):  # lang только позиционный: у кнопок тоже есть ключ «lang»
     text = TEXTS[key][lang]
     return text.format(**kw) if kw else text
 
