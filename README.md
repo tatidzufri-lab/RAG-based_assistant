@@ -1,76 +1,77 @@
-# RAG-ассистент с контролем качества для ретрита «Познай себя»
+# RAG assistant with quality control
 
-Telegram-бот отвечает на вопросы о женском ретрите «Познай себя» в горах Кавказа. Ответы он собирает по документам ретрита и работает на двух моделях на выбор, ChatGPT и GigaChat. Качество ответов проверяется автоматически по метрикам RAGAS.
+A Telegram bot that answers questions about a women's retreat using the retreat's own documents. It runs on two models you can switch between, ChatGPT and GigaChat, and answer quality is checked automatically with RAGAS metrics.
 
-![Переключение моделей и сравнение ответов](demo/bot_model_switching.png)
+This is a practice project. The retreat, "Know Yourself" («Познай себя»), is a training scenario of a retreat center, not a real organization. Case study: [tatidzufri.com/en/case/rag-assistant](https://tatidzufri.com/en/case/rag-assistant).
 
-## О проекте
+![Switching models and comparing answers](demo/bot_model_switching.png)
 
-Бот работает по схеме RAG: сначала находит в базе знаний подходящие фрагменты документов, потом передает их модели, и та формулирует ответ. Так ответ держится на документах ретрита, а не на догадках модели.
+## About the project
 
-Модель пользователь выбирает прямо в Telegram, командой `/mode`. Один и тот же вопрос можно задать ChatGPT и GigaChat и сравнить ответы.
+The bot follows the RAG pattern. It first finds the relevant fragments in the knowledge base, then passes them to the model, which writes the answer. That keeps answers grounded in the retreat documents instead of the model's guesses.
 
-## Задача
+The user picks the model right in Telegram with the `/mode` command, so the same question can be put to ChatGPT and GigaChat and the answers compared.
 
-Потенциальные участницы спрашивают одно и то же: что входит в программу, как подготовиться, что взять с собой, кому подходит ретрит. Нужен был ассистент, который отвечает на это сам и вежливо отказывается от вопросов не по теме, например о маркетинговой стратегии или внутренних данных.
+## The task
 
-Вторая часть задачи: ответы должны быть точными, и это нужно уметь проверять. Поэтому в систему встроены логирование, статистика, выгрузка логов и автоматическая оценка качества.
+People interested in a retreat ask the same things again and again: what the program includes, how to prepare, what to pack, who the retreat is for. The assistant had to answer these on its own and politely decline off-topic questions, such as marketing strategy or internal data.
 
-## Решение
+The second half of the task: answers have to be accurate, and that has to be checkable. So the system has logging, statistics, log export and automatic quality evaluation built in.
 
-1. **База знаний.** Документы о ретрите из `data/` режутся на смысловые фрагменты и сохраняются в векторную базу ChromaDB. Команда `/reindex` пересобирает базу после правки документов.
-2. **Поиск и ответ.** На вопрос бот находит ближайшие фрагменты семантическим поиском и передает их выбранной модели.
-3. **Две модели.** ChatGPT (`gpt-4o-mini`, эмбеддинги `text-embedding-3-small`) и GigaChat от Сбера. У каждой свой конвейер и своя векторная база.
-4. **Кеш.** Если такой же вопрос уже был, ответ берется из кеша без нового запроса к модели.
-5. **Логи и статистика.** Каждый запрос пишется в SQLite. Команда «Статистика» показывает текущую модель, размер базы, кеш, число запросов и среднее время ответа, «Логи» выгружает журнал в CSV.
-6. **Оценка RAGAS.** Скрипт `evaluate_compare.py` прогоняет обе модели по 50 тестовым вопросам и считает три метрики: Faithfulness, Context Precision и Answer Relevancy.
+## How it works
 
-## Как это выглядит
+1. **Knowledge base.** Retreat documents from `data/` are split into meaningful fragments and stored in a ChromaDB vector database. The `/reindex` command rebuilds it after the documents change.
+2. **Search and answer.** For each question the bot finds the closest fragments with semantic search and hands them to the selected model.
+3. **Two models.** ChatGPT (`gpt-4o-mini`, embeddings `text-embedding-3-small`) and GigaChat by Sber. Each has its own pipeline and its own vector store.
+4. **Cache.** If the same question was asked before, the answer comes from the cache without a new model call.
+5. **Logs and statistics.** Every request is written to SQLite. "Statistics" shows the current model, knowledge base size, cache, request count and average response time; "Logs" exports the journal to CSV.
+6. **RAGAS evaluation.** `evaluate_compare.py` runs both models over 50 test questions and computes three metrics: Faithfulness, Context Precision and Answer Relevancy.
 
-**Запуск и статистика.** Приветствие со списком моделей, статистика системы (55 фрагментов в базе знаний, среднее время ответа около 3 секунд) и выгрузка логов в CSV.
+## What it looks like
 
-![Запуск бота и статистика](demo/bot_start_and_stats.png)
+**Start and statistics.** The greeting with the list of models, system statistics and the CSV log export.
 
-**Две модели на одном вопросе** (скриншот в начале страницы). На вопрос «Расскажи о времени для тишины и одиночества» GigaChat отвечает развернуто, с деталями расписания. После переключения командой `/mode` ChatGPT дает ответ короче.
+![Bot start and statistics](demo/bot_start_and_stats.png)
 
-**Сравнение по RAGAS.** Сводная таблица по трем метрикам и шести тематическим блокам: суть продукта, аудитория, программа, быт и сборы, правила и связь, отказы на вопросы не по теме.
+**Two models, one question** (screenshot at the top). Asked about time for silence and solitude, GigaChat gives a detailed answer with schedule specifics. After switching with `/mode`, ChatGPT answers more briefly.
 
-![Сравнительная оценка моделей](demo/evaluation_comparison.png)
+**RAGAS comparison.** A summary table across the three metrics and six topic groups: what the product is, audience, program, logistics and packing, rules and contact, declining off-topic questions.
 
-## Результат
+![Model comparison](demo/evaluation_comparison.png)
 
-- 90% вопросов бот закрывает без участия человека.
-- Точность каждого ответа можно проверить автоматически, а не на глаз.
-- Средний балл по RAGAS у моделей почти одинаковый: 0,8412 у ChatGPT и 0,8413 у GigaChat. ChatGPT точнее держится контекста, GigaChat выше по релевантности ответа.
-- Систему легко перенести на другую предметную область: достаточно заменить документы в `data/` и выполнить `/reindex`.
+## Results
 
-## Стек технологий
+- On my test run of 50 questions the two models scored almost the same on RAGAS: 0.8412 for ChatGPT and 0.8413 for GigaChat. ChatGPT sticks to the context more closely, GigaChat scores higher on answer relevancy.
+- The accuracy of every answer can be checked automatically rather than by eye.
+- The system moves to another domain easily: replace the documents in `data/` and run `/reindex`.
 
-| Технология | Зачем используется |
+## Tech stack
+
+| Technology | What it's for |
 |---|---|
-| **Python** | Язык проекта, в контейнере 3.12 |
-| **OpenAI API** | Ответы ChatGPT (`gpt-4o-mini`) и эмбеддинги для поиска |
-| **GigaChat API** | Вторая модель, от Сбера, для ответов и эмбеддингов |
-| **ChromaDB** | Векторная база: хранит фрагменты документов и ищет по смыслу |
-| **SQLite** | Кеш ответов и журнал запросов |
-| **python-telegram-bot** | Интерфейс бота: команды, кнопки меню, выгрузка файлов |
-| **RAGAS** | Автоматическая оценка качества ответов по метрикам |
-| **LangChain** | Подключает эмбеддинги OpenAI к RAGAS |
-| **Docker Compose** | Запуск бота на сервере. Метрики считаются вне контейнера, чтобы образ не тянул тяжелые библиотеки оценки |
+| **Python** | Project language, 3.12 in the container |
+| **OpenAI API** | ChatGPT answers (`gpt-4o-mini`) and search embeddings |
+| **GigaChat API** | The second model, by Sber, for answers and embeddings |
+| **ChromaDB** | Vector store: keeps document fragments and searches by meaning |
+| **SQLite** | Answer cache and request log |
+| **python-telegram-bot** | Bot interface: commands, menu buttons, file export |
+| **RAGAS** | Automatic answer quality metrics |
+| **LangChain** | Connects OpenAI embeddings to RAGAS |
+| **Docker Compose** | Runs the bot on the server. Metrics are computed outside the container so the image doesn't pull in heavy evaluation libraries |
 
-## Структура репозитория
+## Repository structure
 
-- `run_bot.py`: точка запуска бота с обеими моделями.
-- `evaluate_compare.py`: сравнительная оценка моделей по RAGAS.
-- `data/`: документы ретрита для базы знаний.
-- `assistant_api/`: конвейер на OpenAI (поиск, кеш, логи, обертка Telegram).
-- `assistant_giga/`: такой же конвейер на GigaChat, плюс клиент API и сертификат для подключения к GigaChat.
-- `requirements.txt`: все зависимости, включая оценку. `requirements-bot.txt`: только для бота.
-- `demo/`: скриншоты.
+- `run_bot.py`: starts the bot with both models.
+- `evaluate_compare.py`: RAGAS comparison of the models.
+- `data/`: retreat documents for the knowledge base (in Russian).
+- `assistant_api/`: the OpenAI pipeline (search, cache, logs, Telegram wrapper).
+- `assistant_giga/`: the same pipeline on GigaChat, plus the API client and the certificate for connecting to GigaChat.
+- `requirements.txt`: all dependencies, including evaluation. `requirements-bot.txt`: the bot only.
+- `demo/`: screenshots.
 
-## Запуск
+## Running it
 
-Создайте `.env` в корне проекта:
+Create `.env` in the project root:
 
 ```env
 OPENAI_API_KEY=
@@ -79,23 +80,23 @@ GIGACHAT_AUTH_KEY=
 TELEGRAM_BOT_TOKEN=
 ```
 
-Локально:
+Locally:
 
 ```bash
 pip install -r requirements.txt
-python run_bot.py              # бот
-python evaluate_compare.py     # оценка моделей, по желанию
+python run_bot.py              # the bot
+python evaluate_compare.py     # model evaluation, optional
 ```
 
-На сервере через Docker Compose (только бот):
+On a server with Docker Compose (bot only):
 
 ```bash
 touch bot_logs.db
 docker compose up -d --build
 ```
 
-Файл `bot_logs.db` нужно создать до первого запуска, иначе Docker создаст на его месте папку. Векторные базы монтируются из `assistant_api/chroma_db` и `assistant_giga/chroma_db`. Если они пустые, бот сам проиндексирует документы при первом старте.
+Create `bot_logs.db` before the first start, otherwise Docker creates a directory in its place. The vector stores are mounted from `assistant_api/chroma_db` and `assistant_giga/chroma_db`. If they are empty, the bot indexes the documents itself on first start.
 
-## Автор
+## Author
 
-Татьяна Дзюбас, AI-инженер по автоматизации. Делаю Telegram-ботов, RAG-ассистентов и LLM-агентов, которые снимают рутину с небольших команд. Кейсы и контакты на [tatidzufri.com](https://tatidzufri.com).
+Tetiana Dziubas, AI automation engineer. I build Telegram bots, RAG assistants and LLM agents that take routine work off small teams. Case studies and contact: [tatidzufri.com/en](https://tatidzufri.com/en/).
